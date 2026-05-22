@@ -167,42 +167,115 @@ En Vercel, agregar estas mismas variables en el panel de configuración del proy
 
 ---
 
-## Setup local
+## Cómo usar este repositorio
+
+El repo es público. Para levantarlo en tu propia cuenta necesitás crear los servicios externos y conectarlos. Seguí estos pasos en orden.
+
+---
+
+### Paso 1 — Crear el proyecto en Supabase
+
+1. Entrá a [supabase.com](https://supabase.com) y creá una cuenta gratuita
+2. Creá un nuevo proyecto (anotá la contraseña de la base de datos, la vas a necesitar si conectás directamente)
+3. Una vez creado el proyecto, andá a **Project Settings → API** y copiá:
+   - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **anon / public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role key** → `SUPABASE_SERVICE_ROLE_KEY` (nunca la expongas en el frontend)
+
+---
+
+### Paso 2 — Ejecutar las migraciones SQL
+
+Las migraciones crean todas las tablas, índices, políticas RLS y vistas que necesita la app.
+
+1. En Supabase, andá a **SQL Editor**
+2. Abrí y ejecutá cada archivo de `back/supabase/migrations/` **en orden**, uno por uno:
+
+   | Archivo | Qué hace |
+   |---------|---------|
+   | `001_create_participantes.sql` | Tabla de inscriptos + RLS |
+   | `002_hub_features.sql` | Columnas de avatar y campos del hub |
+   | `003_partidos_pronosticos.sql` | Tabla de pronósticos + RLS |
+   | `004_participantes_update_policy.sql` | Política para que cada usuario edite su propio perfil |
+   | `005_nombre_visible_ranking.sql` | Nickname para el ranking + vista inicial |
+   | `006_puntos_total.sql` | Columna `puntos_total` en participantes + vista de ranking final |
+
+   > **Importante:** ejecutalos en orden. Cada migración puede depender de la anterior.
+
+---
+
+### Paso 3 — Obtener API key de football-data.org
+
+1. Registrate gratis en [football-data.org](https://www.football-data.org/)
+2. Copiá tu API key → `FOOTBALL_DATA_API_KEY`
+
+El plan gratuito permite hasta 10 requests/minuto, más que suficiente para esta app.
+
+---
+
+### Paso 4 — Configurar variables de entorno
+
+Creá el archivo `front/.env.local` con tus valores:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+FOOTBALL_DATA_API_KEY=tu_api_key
+CRON_SECRET=un_string_aleatorio_largo
+```
+
+Para `CRON_SECRET` podés generar uno con:
+```bash
+openssl rand -hex 32
+```
+
+---
+
+### Paso 5 — Levantar en local
 
 ```bash
-# 1. Instalar dependencias
 cd front
 npm install
-
-# 2. Configurar variables de entorno
-cp .env.example .env.local   # y completar los valores
-
-# 3. Ejecutar migraciones en Supabase SQL Editor
-# (en orden: 001 → 006)
-
-# 4. Levantar dev server
 npm run dev
 ```
 
-## Deploy en Vercel
+La app queda en `http://localhost:3000`.
 
-1. Hacer push del repo a GitHub
-2. En Vercel: **New Project** → Root Directory: `front`
-3. Agregar las 5 variables de entorno
+---
+
+### Paso 6 — Deploy en Vercel
+
+1. Hacé fork o push del repo a tu GitHub
+2. En [vercel.com](https://vercel.com): **New Project** → seleccioná el repo → **Root Directory: `front`**
+3. Agregá las 5 variables de entorno del paso 4
 4. Deploy
-5. En Supabase → Authentication → URL Configuration:
-   - Site URL: `https://tu-proyecto.vercel.app`
-   - Redirect URLs: `https://tu-proyecto.vercel.app/**`
 
-## Configurar rol de admin
+---
 
-Ejecutar en el SQL Editor de Supabase:
+### Paso 7 — Configurar URLs de autenticación en Supabase
+
+Una vez que Vercel te dé la URL de producción (ej. `https://mi-penca.vercel.app`):
+
+1. En Supabase → **Authentication → URL Configuration**
+2. **Site URL**: `https://mi-penca.vercel.app`
+3. **Redirect URLs**: `https://mi-penca.vercel.app/**`
+
+Sin esto, los magic links redirigen a `localhost` y no funcionan en producción.
+
+---
+
+### Paso 8 — Asignar rol de administrador
+
+Para acceder al panel admin (`/admin`) necesitás un usuario con rol `admin`. Después de que ese usuario se haya registrado al menos una vez, ejecutá en el **SQL Editor** de Supabase:
 
 ```sql
 update auth.users
 set raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'::jsonb
 where email = 'tu@email.com';
 ```
+
+El admin puede ver todos los inscriptos, ver los pronósticos en modo lectura y forzar el recálculo de puntos, pero **no puede participar** en la penca.
 
 ---
 
