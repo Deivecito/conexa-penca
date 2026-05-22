@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import {
   Search, Download, Users, MapPin, Target,
-  ChevronRight, X, BarChart2, Trophy, User,
+  ChevronRight, X, BarChart2, Trophy, User, RefreshCw,
 } from 'lucide-react'
 import type { Participante } from '@/types'
 import type { PartidoNormalizado } from '@/lib/football-api'
@@ -103,6 +103,19 @@ export default function AdminClient({ participantes, pronosticos, partidos }: Ad
 // ─── Tab Resumen ──────────────────────────────────────────────────────────────
 
 function TabResumen({ participantes, pronosticos }: { participantes: ParticipanteAdmin[]; pronosticos: PronosticoAdmin[] }) {
+  const [recalcState, setRecalcState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [recalcMsg, setRecalcMsg]     = useState('')
+
+  const handleRecalcular = async () => {
+    setRecalcState('loading')
+    setRecalcMsg('')
+    const res = await fetch('/api/cron/calcular-puntos')
+    const json = await res.json()
+    setRecalcState(res.ok ? 'done' : 'error')
+    setRecalcMsg(json.message ?? json.error ?? '')
+    setTimeout(() => setRecalcState('idle'), 5000)
+  }
+
   const conProns    = participantes.filter(p => p.num_pronosticos > 0).length
   const sinProns    = participantes.length - conProns
   const avgProns    = participantes.length
@@ -122,7 +135,24 @@ function TabResumen({ participantes, pronosticos }: { participantes: Participant
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-black text-white">Resumen</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-black text-white">Resumen</h1>
+        <div className="flex items-center gap-3">
+          {recalcMsg && (
+            <span className={`text-xs font-semibold ${recalcState === 'done' ? 'text-green-400' : 'text-red-400'}`}>
+              {recalcMsg}
+            </span>
+          )}
+          <button
+            onClick={handleRecalcular}
+            disabled={recalcState === 'loading'}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 text-xs font-semibold transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${recalcState === 'loading' ? 'animate-spin' : ''}`} />
+            Recalcular puntos
+          </button>
+        </div>
+      </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
