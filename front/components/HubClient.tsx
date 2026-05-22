@@ -3,14 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Trophy, Calendar, Settings, LogOut, User, Menu, X, BarChart2, ShieldCheck } from 'lucide-react'
+import { Trophy, Calendar, Settings, LogOut, User, Menu, X, BarChart2, ShieldCheck, Gift } from 'lucide-react'
 import Link from 'next/link'
 import TabRanking from './hub/TabRanking'
 import TabPronosticos from './hub/TabPronosticos'
 import TabAjustes from './hub/TabAjustes'
 import TabResultados from './hub/TabResultados'
+import TabPremios from './hub/TabPremios'
 
-type Tab = 'ranking' | 'pronosticos' | 'resultados' | 'ajustes'
+type Tab = 'ranking' | 'pronosticos' | 'resultados' | 'premios' | 'ajustes'
 
 interface HubClientProps {
   nombre: string
@@ -26,6 +27,7 @@ const TABS = [
   { id: 'ranking'      as Tab, label: 'Ranking',      icon: Trophy    },
   { id: 'pronosticos'  as Tab, label: 'Pronósticos',  icon: Calendar  },
   { id: 'resultados'   as Tab, label: 'Resultados',   icon: BarChart2 },
+  { id: 'premios'      as Tab, label: 'Premios',      icon: Gift      },
   { id: 'ajustes'      as Tab, label: 'Ajustes',      icon: Settings  },
 ]
 
@@ -198,12 +200,14 @@ export default function HubClient({ nombre, procedencia, avatarUrl, userEmail, n
             <h1 className="text-2xl font-black text-white">
               {tab === 'ranking'     ? '🏆 Ranking'     :
                tab === 'pronosticos' ? '🔮 Pronósticos' :
-               tab === 'resultados'  ? '📊 Resultados'  : '⚙️ Ajustes'}
+               tab === 'resultados'  ? '📊 Resultados'  :
+               tab === 'premios'     ? '🎁 Premios'     : '⚙️ Ajustes'}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
               {tab === 'ranking'     ? 'Tabla de posiciones · Mundial 2026'      :
                tab === 'pronosticos' ? 'Predecí los resultados de cada partido'  :
                tab === 'resultados'  ? 'Grupos, tabla y resultados de partidos'  :
+               tab === 'premios'     ? '¿Qué te llevás si ganás?'                :
                `¡Hola, ${firstName}! Gestioná tu perfil`}
             </p>
           </div>
@@ -230,6 +234,7 @@ export default function HubClient({ nombre, procedencia, avatarUrl, userEmail, n
           {tab === 'ranking'     && <TabRanking />}
           {tab === 'pronosticos' && <TabPronosticos userEmail={userEmail} nombreVisible={nombreVisible} onNombreVisibleSet={setNombreVisible} isAdmin={isAdmin} />}
           {tab === 'resultados'  && <TabResultados />}
+          {tab === 'premios'     && <TabPremios />}
           {tab === 'ajustes'     && <TabAjustes nombre={nombre} userEmail={userEmail} avatarUrl={avatarUrl} telefono={telefono} nombreVisible={nombreVisible} />}
         </main>
       </div>
